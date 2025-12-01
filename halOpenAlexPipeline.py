@@ -26,10 +26,13 @@ def getOAResults(url):
         return -1
 
 #Return 1st id of OpenAlex API responses
-def getFirstOAID(url):
+def getOAIDs(url):
     result = getOAResults(url)
     if result != -1:
-        return result[0]['id'].split("/")[-1]
+        oa_ids = []
+        for cur_author in result:
+            oa_ids.append(cur_author['id'].split("/")[-1])
+        return oa_ids
     else:
         return -1
     
@@ -150,13 +153,14 @@ if st.session_state.institution != "" and st.session_state.authors != "":
         url = "https://api.openalex.org/institutions?search="+institution
         institutions = getOAResults(url)
         institutionID = -1
-        for insitution in institutions:
-            for parent_institution in insitution["associated_institutions"]:
-                if parent_institution["display_name"] == "Université de Bretagne Sud":
-                    institutionID = insitution["id"].split("/")[-1]
+        if institutions != -1:
+            for institution in institutions:
+                for parent_institution in institution["associated_institutions"]:
+                    if parent_institution["display_name"] == "Université de Bretagne Sud":
+                        institutionID = institution["id"].split("/")[-1]
+                        break
+                if institutionID != -1:
                     break
-            if institutionID != -1:
-                break
         if institutionID != -1:
             st.session_state.institutionOAID = institutionID
             st.write("Institution trouvée dans OpenAlex: https://openalex.org/institutions/" + institutionID)
@@ -209,24 +213,32 @@ if st.session_state.institution != "" and st.session_state.authors != "":
                     else:
                         st.markdown(":red[Chercheur non trouvé dans Hal "+ institutionHALID  +"]: "+ author)
                 #Get authors OpenAlex IDs
+                nb_authors_found = 0
                 for author in authors:
+                    result = []
                     url = "https://api.openalex.org/authors?filter=last_known_institutions.id%3A"+institutionID+",default.search%3A\""+author+"\""
-                    result = getFirstOAID(url)
-                    if result == -1:
-                        url = "https://api.openalex.org/authors?filter=affiliations.institution.id%3A"+institutionID+",default.search%3A\""+author+"\""
-                        result = getFirstOAID(url)
-                        if result == -1:
-                            url = "https://api.openalex.org/authors?filter=affiliations.institution.id%3A"+UbsOaID+",default.search%3A\""+author+"\""
-                            result = getFirstOAID(url)
-                    if result != -1:
-                        authorIDs.append(result)
-                        st.write("Chercheur trouvé dans OpenAlex: "+ author + " https://openalex.org/authors/"+result)
+                    cur_authors = getOAIDs(url)
+                    if cur_authors != -1:
+                        result.extend(cur_authors)
+                    url = "https://api.openalex.org/authors?filter=affiliations.institution.id%3A"+institutionID+",default.search%3A\""+author+"\""
+                    cur_authors = getOAIDs(url)
+                    if cur_authors != -1:
+                        result.extend(cur_authors)
+                    if len(result) == 0:
+                        url = "https://api.openalex.org/authors?filter=affiliations.institution.id%3A"+UbsOaID+",default.search%3A\""+author+"\""
+                        result = getOAIDs(url)
+                    result = list(dict.fromkeys(result))
+                    if len(result) > 0:
+                        nb_authors_found += 1
+                        for cur_oa_id in result:
+                            authorIDs.append(cur_oa_id)
+                            st.write("Chercheur trouvé dans OpenAlex: "+ author + " https://openalex.org/authors/"+cur_oa_id)
                     else:
                         st.markdown(":red[Chercheur non trouvé dans OpenAlex]: "+ author)
 
                 if (len(authorIDs) > 0):
                     st.session_state.authorIDs = authorIDs
-                    st.write("Chercheurs trouvés dans OpenAlex: "+ str(len(authorIDs)) + "/" + str(len(authors)))
+                    st.write("Chercheurs trouvés dans OpenAlex: "+ str(nb_authors_found) + "/" + str(len(authors)))
                 else:
                     st.markdown(":red[Erreur: Aucun chercheur trouvé dans OpenAlex]")
             else:
