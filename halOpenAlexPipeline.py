@@ -167,8 +167,8 @@ if st.session_state.institution != "" and st.session_state.authors != "":
             found = False
             
             #Get institution Hal
+            institution = st.session_state.halInstitutionCode.upper() 
             if st.session_state.halInstitutionCode != "":
-                institution = st.session_state.halInstitutionCode.upper() 
                 url = "https://api.archives-ouvertes.fr/search/"+institution+"/"
                 response = apiGET(url)
                 if response and "response" in response and len(response["response"]):
