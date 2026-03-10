@@ -154,10 +154,10 @@ if st.session_state.institution != "" and st.session_state.authors != "":
         institutions = getOAResults(url)
         institutionID = -1
         if institutions != -1:
-            for institution in institutions:
-                for parent_institution in institution["associated_institutions"]:
+            for cur_institution in institutions:
+                for parent_institution in cur_institution["associated_institutions"]:
                     if parent_institution["display_name"] == "Université de Bretagne Sud":
-                        institutionID = institution["id"].split("/")[-1]
+                        institutionID = cur_institution["id"].split("/")[-1]
                         break
                 if institutionID != -1:
                     break
