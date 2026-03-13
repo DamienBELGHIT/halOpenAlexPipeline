@@ -160,7 +160,7 @@ if st.session_state.institution != "" and st.session_state.authors != "":
                         institutionID = cur_institution["id"].split("/")[-1]
                         break
                 if institutionID != -1:
-                    break
+                    break 
         if institutionID != -1:
             st.session_state.institutionOAID = institutionID
             st.write("Institution trouvée dans OpenAlex: https://openalex.org/institutions/" + institutionID)
